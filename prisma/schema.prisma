@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  name        String
+  friends     Friend[]
+  receipts    Receipt[]
+  payments    Payment[]
+  assignments Assignment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Friend {
+  id          String       @id @default(uuid())
+  name        String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  payments    Payment[]
+  assignments Assignment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Receipt {
+  id        String    @id @default(uuid())
+  name      String?
+  subtotal  Float
+  delivery  Float     @default(0)
+  tax       Float     @default(0)
+  service   Float     @default(0)
+  total     Float
+  creatorId String
+  creator   User      @relation(fields: [creatorId], references: [id])
+  items     Item[]
+  payments  Payment[]
+  createdAt DateTime  @default(now())
+}
+
+model Item {
+  id          String       @id @default(uuid())
+  name        String
+  price       Float
+  quantity    Int          @default(1)
+  receiptId   String
+  receipt     Receipt      @relation(fields: [receiptId], references: [id])
+  assignments Assignment[]
+}
+
+model Assignment {
+  id        String   @id @default(uuid())
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  friendId  String?
+  friend    Friend?  @relation(fields: [friendId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  receiptId String
+  receipt   Receipt  @relation(fields: [receiptId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  friendId  String?
+  friend    Friend?  @relation(fields: [friendId], references: [id])
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
