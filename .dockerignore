@@ -1,0 +1,17 @@
+node_modules
+dist
+prisma/dev.db
+prisma/dev.db-journal
+.env
+.git
+.gitignore
+*.md
+test-scenarios.mjs
+profile-test.mjs
+test-scan.mjs
+test_assets
+test_output.txt
+docker-compose.yml
+Dockerfile
+.dockerignore
+npm-debug.log
