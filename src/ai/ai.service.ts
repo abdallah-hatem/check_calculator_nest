@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { randomUUID } from 'crypto';
 
 export interface ScannedItem {
     id?: string;
@@ -78,7 +79,10 @@ export class AIService {
             const data = JSON.parse(jsonString);
 
             return {
-                items: data.items,
+                items: (data.items || []).map((item: any) => ({
+                    ...item,
+                    id: randomUUID(),
+                })),
                 subtotal: data.subtotal || 0,
                 delivery: data.delivery || 0,
                 tax: data.tax || 0,
