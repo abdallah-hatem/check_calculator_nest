@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:9000';
 
 async function test() {
     console.log('🚀 Starting Test Scenarios...');

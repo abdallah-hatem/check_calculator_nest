@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:9000';
 
 async function testScan(imagePath) {
     if (!imagePath) {
