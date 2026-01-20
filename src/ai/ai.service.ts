@@ -1,44 +1,46 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { randomUUID } from 'crypto';
-import { TelegramNotificationService } from '../notification/telegram-notification.service';
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { randomUUID } from "crypto";
+import { TelegramNotificationService } from "../notification/telegram-notification.service";
 
 export interface ScannedItem {
-    id?: string;
-    name: string;
-    price: number;
-    quantity: number;
+  id?: string;
+  name: string;
+  price: number;
+  quantity: number;
 }
 
 export interface ScanResult {
-    items: ScannedItem[];
-    subtotal: number;
-    delivery: number;
-    tax: number;
-    service: number;
-    total: number;
+  items: ScannedItem[];
+  subtotal: number;
+  delivery: number;
+  tax: number;
+  service: number;
+  total: number;
 }
 
 @Injectable()
 export class AIService {
-    private genAI: GoogleGenerativeAI;
-    private model: any;
+  private genAI: GoogleGenerativeAI;
+  private model: any;
 
-    constructor(
-        private configService: ConfigService,
-        private telegramNotificationService: TelegramNotificationService,
-    ) {
-        const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-        if (!apiKey) {
-            throw new Error('GEMINI_API_KEY is not defined in environment variables');
-        }
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+  constructor(
+    private configService: ConfigService,
+    private telegramNotificationService: TelegramNotificationService,
+  ) {
+    const apiKey = this.configService.get<string>("GEMINI_API_KEY");
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined in environment variables");
     }
+    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.model = this.genAI.getGenerativeModel({
+      model: "gemini-flash-latest",
+    });
+  }
 
-    async scanReceipt(base64Data: string, mimeType: string): Promise<ScanResult> {
-        const prompt = `
+  async scanReceipt(base64Data: string, mimeType: string): Promise<ScanResult> {
+    const prompt = `
     Analyze this receipt image and extract the following details in strict JSON format:
     1. List of individual items ordered (name, price, quantity). 
        - IMPORTANT: If an item has a quantity > 1 (e.g., "x6", "qty 6", "6 wings"), YOU MUST return X SEPARATE entries for that item.
@@ -61,48 +63,50 @@ export class AIService {
     }
   `;
 
-        try {
-            const result = await this.model.generateContent([
-                prompt,
-                {
-                    inlineData: {
-                        data: base64Data,
-                        mimeType: mimeType,
-                    },
-                },
-            ]);
+    try {
+      const result = await this.model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType,
+          },
+        },
+      ]);
 
-            const response = await result.response;
-            const text = response.text();
+      const response = await result.response;
+      const text = response.text();
 
-            const jsonString = text
-                .replace(/```json/g, '')
-                .replace(/```/g, '')
-                .trim();
+      const jsonString = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
 
-            const data = JSON.parse(jsonString);
+      const data = JSON.parse(jsonString);
 
-            return {
-                items: (data.items || []).map((item: any) => ({
-                    ...item,
-                    id: randomUUID(),
-                })),
-                subtotal: data.subtotal || 0,
-                delivery: data.delivery || 0,
-                tax: data.tax || 0,
-                service: data.service || 0,
-                total: data.total || 0,
-            };
-        } catch (error: any) {
-            console.error('AI Scan Error:', error);
+      return {
+        items: (data.items || []).map((item: any) => ({
+          ...item,
+          id: randomUUID(),
+        })),
+        subtotal: data.subtotal || 0,
+        delivery: data.delivery || 0,
+        tax: data.tax || 0,
+        service: data.service || 0,
+        total: data.total || 0,
+      };
+    } catch (error: any) {
+      console.error("AI Scan Error:", error);
 
-            // Send Telegram notification about the error
-            await this.telegramNotificationService.sendScanReceiptError(error, {
-                mimeType,
-                hasBase64Data: !!base64Data,
-            });
+      // Send Telegram notification about the error
+      await this.telegramNotificationService.sendScanReceiptError(error, {
+        mimeType,
+        hasBase64Data: !!base64Data,
+      });
 
-            throw new InternalServerErrorException(error.message || 'Unknown error during AI scan');
-        }
+      throw new InternalServerErrorException(
+        error.message || "Unknown error during AI scan",
+      );
     }
+  }
 }
