@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { randomUUID } from 'crypto';
+import { TelegramNotificationService } from '../notification/telegram-notification.service';
 
 export interface ScannedItem {
     id?: string;
@@ -24,7 +25,10 @@ export class AIService {
     private genAI: GoogleGenerativeAI;
     private model: any;
 
-    constructor(private configService: ConfigService) {
+    constructor(
+        private configService: ConfigService,
+        private telegramNotificationService: TelegramNotificationService,
+    ) {
         const apiKey = this.configService.get<string>('GEMINI_API_KEY');
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY is not defined in environment variables');
@@ -91,6 +95,13 @@ export class AIService {
             };
         } catch (error: any) {
             console.error('AI Scan Error:', error);
+
+            // Send Telegram notification about the error
+            await this.telegramNotificationService.sendScanReceiptError(error, {
+                mimeType,
+                hasBase64Data: !!base64Data,
+            });
+
             throw new InternalServerErrorException(error.message || 'Unknown error during AI scan');
         }
     }
