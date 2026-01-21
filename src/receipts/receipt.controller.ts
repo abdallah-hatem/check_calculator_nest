@@ -17,6 +17,11 @@ export class ReceiptController {
         return this.aiService.scanReceipt(base64Image, mimeType || 'image/jpeg');
     }
 
+    @Get('stats')
+    async getStats(@GetUser() user: any) {
+        return this.receiptRepository.getUserStats(user.id);
+    }
+
     @Post()
     async createReceipt(@GetUser() user: any, @Body() data: any) {
         return this.receiptRepository.create({
