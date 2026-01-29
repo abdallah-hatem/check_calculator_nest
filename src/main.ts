@@ -1,17 +1,18 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { json, urlencoded } from 'express';
 
-@Controller('upload')
-export class UploadController {
-  @Post()
-  @UseInterceptors(
-    FileInterceptor('image', {
-      limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
-      },
-    }),
-  )
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
-    return { size: file.size };
-  }
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+  await app.listen(process.env.PORT ?? 9000);
 }
+
+
+bootstrap();
